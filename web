@@ -1,1 +1,1195 @@
-demo演示2min视频
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>智慧港口 AGV 调度系统 · 数字孪生仿真</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #050d14;
+    --panel:    #080f18;
+    --border:   #0e2233;
+    --amber:    #f5a623;
+    --amber2:   #ffcc44;
+    --cyan:     #00d4ff;
+    --cyan2:    #00fff7;
+    --green:    #39ff14;
+    --red:      #ff3a3a;
+    --purple:   #9b59ff;
+    --text:     #c8dde8;
+    --dim:      #3a5568;
+    --mono:     'Share Tech Mono', monospace;
+    --display:  'Orbitron', monospace;
+    --body-cn:  'Noto Sans SC', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body-cn);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, #050d14 0%, #071522 50%, #050d14 100%);
+    flex-shrink: 0;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    border: 2px solid var(--amber);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    animation: pulse-border 3s ease-in-out infinite;
+  }
+  @keyframes pulse-border {
+    0%,100% { border-color: var(--amber); box-shadow: 0 0 0 0 rgba(245,166,35,0); }
+    50%      { border-color: var(--amber2); box-shadow: 0 0 8px 2px rgba(245,166,35,.3); }
+  }
+  .logo-text {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 2px;
+    line-height: 1.3;
+  }
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+  .header-stats {
+    display: flex; gap: 28px;
+  }
+  .hstat {
+    text-align: right;
+  }
+  .hstat-val {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .hstat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .hstat.amber .hstat-val { color: var(--amber); }
+  .hstat.cyan  .hstat-val { color: var(--cyan);  }
+  .hstat.green .hstat-val { color: var(--green); }
+  .hstat.red   .hstat-val { color: var(--red);   }
+
+  .header-right {
+    display: flex; align-items: center; gap: 16px;
+  }
+  #clock {
+    font-family: var(--display);
+    font-size: 22px;
+    color: var(--cyan2);
+    letter-spacing: 3px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: .3; }
+  }
+
+  /* ── Main layout ── */
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 200px 1fr 210px;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* ── Side panels ── */
+  .side-panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .side-panel.right {
+    border-right: none;
+    border-left: 1px solid var(--border);
+  }
+  .panel-title {
+    font-family: var(--display);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--amber);
+    padding: 10px 12px 6px;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+
+  /* AGV list */
+  .agv-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+  .agv-list::-webkit-scrollbar { width: 3px; }
+  .agv-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .agv-item {
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(14,34,51,.6);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .agv-item:hover { background: rgba(0,212,255,.05); }
+  .agv-item.selected { background: rgba(0,212,255,.08); border-left: 2px solid var(--cyan); }
+
+  .agv-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+  }
+  .agv-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .agv-state-badge {
+    font-family: var(--mono);
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .state-IDLE       { background: rgba(58,85,104,.4); color: var(--dim); }
+  .state-MOVING     { background: rgba(0,212,255,.15); color: var(--cyan); }
+  .state-DELIVERING { background: rgba(155,89,255,.15); color: var(--purple); }
+  .state-LOADING    { background: rgba(245,166,35,.15); color: var(--amber); }
+  .state-UNLOADING  { background: rgba(245,166,35,.15); color: var(--amber); }
+  .state-CHARGING   { background: rgba(57,255,20,.1); color: var(--green); }
+  .state-BLOCKED    { background: rgba(255,58,58,.15); color: var(--red); }
+
+  .battery-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .battery-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .3s;
+  }
+
+  /* ── Canvas area ── */
+  .canvas-area {
+    position: relative;
+    background: #020b12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #grid-canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  /* ── Scanline overlay ── */
+  .canvas-area::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,.04) 0px,
+      rgba(0,0,0,.04) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+  }
+
+  /* corner decorations */
+  .corner { position: absolute; width: 20px; height: 20px; }
+  .corner-tl { top:8px; left:8px;  border-top: 1px solid var(--cyan); border-left: 1px solid var(--cyan); }
+  .corner-tr { top:8px; right:8px; border-top: 1px solid var(--cyan); border-right: 1px solid var(--cyan); }
+  .corner-bl { bottom:8px; left:8px;  border-bottom: 1px solid var(--cyan); border-left: 1px solid var(--cyan); }
+  .corner-br { bottom:8px; right:8px; border-bottom: 1px solid var(--cyan); border-right: 1px solid var(--cyan); }
+
+  /* ── Controls (bottom of canvas area) ── */
+  .controls {
+    position: absolute;
+    bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(5,13,20,.8);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+  }
+  .btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all .2s;
+  }
+  .btn-primary {
+    background: rgba(0,212,255,.12);
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+  .btn-primary:hover {
+    background: rgba(0,212,255,.25);
+    box-shadow: 0 0 10px rgba(0,212,255,.3);
+  }
+  .btn-amber {
+    background: rgba(245,166,35,.1);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .btn-amber:hover { background: rgba(245,166,35,.2); }
+  .btn-red {
+    background: rgba(255,58,58,.1);
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .btn-red:hover { background: rgba(255,58,58,.2); }
+  .speed-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--dim);
+    margin-left: 4px;
+  }
+  #speed-display {
+    font-family: var(--display);
+    font-size: 12px;
+    color: var(--amber);
+    min-width: 30px;
+    text-align: center;
+  }
+
+  /* ── Right panel: metrics ── */
+  .metrics-panel {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .metric-val {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .mv-amber { color: var(--amber); }
+  .mv-cyan  { color: var(--cyan);  }
+  .mv-green { color: var(--green); }
+  .mv-red   { color: var(--red);   }
+
+  /* mini bar */
+  .mini-bar-wrap { margin-top: 3px; margin-bottom: 10px; }
+  .mini-bar-bg {
+    height: 4px; background: var(--border);
+    border-radius: 2px; overflow: hidden;
+  }
+  .mini-bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width .4s ease;
+  }
+
+  /* log */
+  .event-log {
+    flex: 1; overflow-y: auto; padding: 6px 12px;
+  }
+  .event-log::-webkit-scrollbar { width: 3px; }
+  .event-log::-webkit-scrollbar-thumb { background: var(--border); }
+  .log-entry {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(14,34,51,.4);
+    line-height: 1.4;
+    color: var(--dim);
+  }
+  .log-entry.warn  { color: var(--amber); }
+  .log-entry.alert { color: var(--red); }
+  .log-entry.good  { color: var(--green); }
+  .log-entry.info  { color: var(--cyan); }
+
+  /* legend */
+  .legend {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 5px;
+    font-family: var(--mono); font-size: 9px; color: var(--dim);
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚓</div>
+    <div>
+      <div class="logo-text">AGV DISPATCH OS</div>
+      <div class="logo-sub">SMART PORT · DIGITAL TWIN SIMULATION</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat amber">
+      <div class="hstat-val" id="h-tasks">0</div>
+      <div class="hstat-label">任务完成</div>
+    </div>
+    <div class="hstat cyan">
+      <div class="hstat-val" id="h-active">0</div>
+      <div class="hstat-label">运行车辆</div>
+    </div>
+    <div class="hstat green">
+      <div class="hstat-val" id="h-efficiency">—</div>
+      <div class="hstat-label">调度效率</div>
+    </div>
+    <div class="hstat red">
+      <div class="hstat-val" id="h-conflicts">0</div>
+      <div class="hstat-label">路径冲突</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <div id="clock">00:00:00</div>
+  </div>
+</header>
+
+<!-- ── Main ── -->
+<div class="main">
+
+  <!-- Left: AGV list -->
+  <div class="side-panel">
+    <div class="panel-title">▶ AGV 车队状态</div>
+    <div class="agv-list" id="agv-list"></div>
+  </div>
+
+  <!-- Center: Canvas -->
+  <div class="canvas-area" id="canvas-wrap">
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <canvas id="grid-canvas"></canvas>
+    <div class="controls">
+      <button class="btn btn-primary" id="btn-play">▶ 运行</button>
+      <button class="btn btn-amber"   id="btn-add-task">+ 新任务</button>
+      <button class="btn btn-red"     id="btn-reset">↺ 重置</button>
+      <span class="speed-label">速度</span>
+      <button class="btn btn-primary" id="btn-slower">－</button>
+      <span id="speed-display">1×</span>
+      <button class="btn btn-primary" id="btn-faster">＋</button>
+    </div>
+  </div>
+
+  <!-- Right: Metrics + Log -->
+  <div class="side-panel right">
+    <div class="panel-title">▶ 实时指标</div>
+
+    <div class="metrics-panel">
+      <div class="metric-row">
+        <span class="metric-label">已完成任务</span>
+        <span class="metric-val mv-amber" id="m-completed">0</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">待处理任务</span>
+        <span class="metric-val mv-cyan" id="m-pending">0</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">路径冲突次数</span>
+        <span class="metric-val mv-red" id="m-conflicts">0</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">动态重规划</span>
+        <span class="metric-val mv-amber" id="m-replans">0</span>
+      </div>
+
+      <div class="metric-label" style="margin-top:8px;margin-bottom:4px">车队平均电量</div>
+      <div class="mini-bar-wrap">
+        <div class="mini-bar-bg">
+          <div class="mini-bar-fill" id="bat-bar" style="width:100%;background:var(--green)"></div>
+        </div>
+      </div>
+
+      <div class="metric-label" style="margin-bottom:4px">车队利用率</div>
+      <div class="mini-bar-wrap">
+        <div class="mini-bar-bg">
+          <div class="mini-bar-fill" id="util-bar" style="width:0%;background:var(--cyan)"></div>
+        </div>
+      </div>
+
+      <div class="metric-row" style="margin-top:2px">
+        <span class="metric-label">仿真 Tick</span>
+        <span class="metric-val mv-cyan" id="m-tick" style="font-size:13px">0</span>
+      </div>
+    </div>
+
+    <div class="panel-title">▶ 系统事件日志</div>
+    <div class="event-log" id="event-log"></div>
+
+    <div class="legend">
+      <div class="legend-row"><div class="legend-dot" style="background:#f5a623"></div> AGV 取货中</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#9b59ff"></div> AGV 送货中</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#39ff14"></div> AGV 空闲/充电</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#ff3a3a"></div> AGV 阻塞</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#334455;border:1px solid #0e2233"></div> 集装箱堆场</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#00d4ff;border-radius:50%"></div> 装卸区</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  AGV 调度仿真引擎（JavaScript 版）
+//  完整实现：A* 路径规划 + 任务分配 + 冲突避免 + 死锁解除
+// ═══════════════════════════════════════════════════════════════
+
+const COLS = 40, ROWS = 25;
+const CELL = 20; // px per cell (will be scaled)
+const DEADLOCK_TICKS = 8;
+const LOW_BATTERY    = 20;
+const NUM_AGVS       = 15;
+
+// ── Map constants ──
+const TILE = { EMPTY:0, OBSTACLE:1, CHARGER:2, PICKUP:3, DROPOFF:4 };
+
+// ── AGV Colors (distinct palette) ──
+const AGV_COLORS = [
+  '#f5a623','#00d4ff','#39ff14','#ff3a3a','#9b59ff',
+  '#ff6b35','#00e5cc','#ffd700','#ff69b4','#7fff00',
+  '#ff4500','#00bfff','#adff2f','#ff1493','#00ced1',
+];
+
+// ── State ──
+let map, agvs, tasks, taskCounter, tick, conflicts, replans, running, speed;
+let intervalId = null;
+let selectedAGV = null;
+let logEntries = [];
+
+// ── Canvas ──
+const canvas  = document.getElementById('grid-canvas');
+const ctx     = canvas.getContext('2d');
+let cellSize  = CELL;
+let offsetX   = 0, offsetY = 0;
+
+// ──────────────────────── Map Initialization ──────────────────────────
+
+function buildMap() {
+  map = Array.from({length: ROWS}, () => new Array(COLS).fill(TILE.EMPTY));
+
+  // Container yard obstacles
+  const yards = [
+    [8,2,12,6],[8,10,12,14],[8,18,12,22],
+    [20,2,24,6],[20,10,24,14],[20,18,24,22],
+    [32,2,35,6],[32,10,35,14],[32,18,35,22],
+  ];
+  for (const [x1,y1,x2,y2] of yards)
+    for (let y=y1;y<=y2;y++) for (let x=x1;x<=x2;x++) map[y][x] = TILE.OBSTACLE;
+
+  // Charger stations
+  for (const [x,y] of getChargers()) map[y][x] = TILE.CHARGER;
+  // Pickup zones
+  for (const [x,y] of getPickups()) map[y][x] = TILE.PICKUP;
+  // Dropoff zones
+  for (const [x,y] of getDropoffs()) map[y][x] = TILE.DROPOFF;
+}
+
+function getChargers() { return [[2,2],[2,12],[2,22]]; }
+function getPickups()  {
+  return [[6,4],[6,12],[6,20],[18,4],[18,12],[18,20],[30,4],[30,12],[30,20]];
+}
+function getDropoffs() {
+  return [[38,4],[38,12],[38,20],[14,8],[14,16],[26,8],[26,16]];
+}
+
+// ──────────────────────── A* Path Planning ───────────────────────────
+
+function heuristic(ax,ay,bx,by) {
+  return Math.abs(ax-bx)+Math.abs(ay-by);
+}
+
+function astar(sx,sy,gx,gy, ignoreAGV=null) {
+  if(sx===gx && sy===gy) return [{x:sx,y:sy}];
+
+  const key = (x,y) => y*COLS+x;
+  const open = new MinHeap();
+  const cameFrom = {};
+  const gScore = {};
+
+  gScore[key(sx,sy)] = 0;
+  open.push({f:0, x:sx, y:sy});
+
+  while(!open.empty()) {
+    const cur = open.pop();
+    if(cur.x===gx && cur.y===gy) return reconstructPath(cameFrom, cur.x, cur.y);
+
+    const neighbors = [
+      {x:cur.x+1,y:cur.y},{x:cur.x-1,y:cur.y},
+      {x:cur.x,y:cur.y+1},{x:cur.x,y:cur.y-1}
+    ];
+
+    for(const nb of neighbors) {
+      if(nb.x<0||nb.x>=COLS||nb.y<0||nb.y>=ROWS) continue;
+      if(map[nb.y][nb.x]===TILE.OBSTACLE) continue;
+      // Check AGV occupation
+      const occ = getOccupant(nb.x, nb.y);
+      if(occ && occ!==ignoreAGV) continue;
+
+      let ng = (gScore[key(cur.x,cur.y)]??Infinity) + 1;
+      // Turn penalty
+      const fromKey = key(cur.x,cur.y);
+      if(cameFrom[fromKey]) {
+        const prev = cameFrom[fromKey];
+        if((cur.x-prev.x!==nb.x-cur.x)||(cur.y-prev.y!==nb.y-cur.y)) ng += 0.3;
+      }
+
+      if(ng < (gScore[key(nb.x,nb.y)]??Infinity)) {
+        cameFrom[key(nb.x,nb.y)] = {x:cur.x,y:cur.y};
+        gScore[key(nb.x,nb.y)] = ng;
+        open.push({f: ng + 1.2*heuristic(nb.x,nb.y,gx,gy), x:nb.x, y:nb.y});
+      }
+    }
+  }
+  return null; // No path
+}
+
+function reconstructPath(cameFrom, cx, cy) {
+  const path = [];
+  let cur = {x:cx,y:cy};
+  while(cur) {
+    path.unshift({x:cur.x,y:cur.y});
+    cur = cameFrom[cy*COLS+cx] ? (({x,y})=>({x,y}))(cameFrom[cy*COLS+cx]) : null;
+    if(cur) { cx=cur.x; cy=cur.y; }
+  }
+  return path;
+}
+
+// Smooth: remove collinear waypoints
+function smoothPath(path) {
+  if(!path||path.length<=2) return path;
+  const s=[path[0]];
+  for(let i=1;i<path.length-1;i++){
+    const a=path[i-1],b=path[i],c=path[i+1];
+    if((b.x-a.x!==c.x-b.x)||(b.y-a.y!==c.y-b.y)) s.push(b);
+  }
+  s.push(path[path.length-1]);
+  return s;
+}
+
+// Min-heap for A*
+class MinHeap {
+  constructor(){this.h=[];}
+  push(n){
+    this.h.push(n);
+    let i=this.h.length-1;
+    while(i>0){
+      const p=(i-1)>>1;
+      if(this.h[p].f<=this.h[i].f) break;
+      [this.h[p],this.h[i]]=[this.h[i],this.h[p]];
+      i=p;
+    }
+  }
+  pop(){
+    const top=this.h[0], last=this.h.pop();
+    if(this.h.length>0){
+      this.h[0]=last;
+      let i=0;
+      while(true){
+        let s=i, l=2*i+1, r=2*i+2;
+        if(l<this.h.length&&this.h[l].f<this.h[s].f) s=l;
+        if(r<this.h.length&&this.h[r].f<this.h[s].f) s=r;
+        if(s===i) break;
+        [this.h[i],this.h[s]]=[this.h[s],this.h[i]];
+        i=s;
+      }
+    }
+    return top;
+  }
+  empty(){return this.h.length===0;}
+}
+
+// ──────────────────────── Resource Lock (reservation) ────────────────────────
+
+const reserved = {}; // key(x,y) → agv_id
+
+function getOccupant(x,y) {
+  return reserved[y*COLS+x]||null;
+}
+function reservePath(path, agvId) {
+  for(let i=1;i<path.length;i++) {
+    reserved[path[i].y*COLS+path[i].x] = agvId;
+  }
+}
+function releaseAGV(agvId) {
+  for(const k of Object.keys(reserved)) if(reserved[k]===agvId) delete reserved[k];
+}
+
+// ──────────────────────── AGV Model ──────────────────────────────────────────
+
+function makeAGV(id, x, y, colorIdx) {
+  return {
+    id, x, y,
+    color: AGV_COLORS[colorIdx % AGV_COLORS.length],
+    battery: 70 + Math.random()*30,
+    state: 'IDLE',  // IDLE MOVING LOADING DELIVERING UNLOADING CHARGING BLOCKED
+    task: null,
+    path: [],
+    pathIdx: 0,
+    blockedTicks: 0,
+    tasksDone: 0,
+    totalDist: 0,
+    // for smooth visual interpolation
+    drawX: x, drawY: y,
+    prevX: x, prevY: y,
+    moveProgress: 1,
+  };
+}
+
+// ──────────────────────── Task Model ─────────────────────────────────────────
+
+function makeTask(priority=1) {
+  const pickups  = getPickups();
+  const dropoffs = getDropoffs();
+  const pickup   = pickups [Math.floor(Math.random()*pickups.length)];
+  const dropoff  = dropoffs[Math.floor(Math.random()*dropoffs.length)];
+  return {
+    id:       `T${String(++taskCounter).padStart(3,'0')}`,
+    pickup:   {x:pickup[0],  y:pickup[1]},
+    dropoff:  {x:dropoff[0], y:dropoff[1]},
+    priority,
+    assignedTo: null,
+  };
+}
+
+// ──────────────────────── Dispatcher ─────────────────────────────────────────
+
+function dispatcherTick() {
+  tick++;
+  assignTasks();
+  moveAGVs();
+  checkDeadlocks();
+  handleCharging();
+  updateUI();
+}
+
+function assignTasks() {
+  const idle = agvs.filter(a=>a.state==='IDLE' && a.battery>LOW_BATTERY);
+  const pending = tasks.filter(t=>!t.assignedTo).sort((a,b)=>b.priority-a.priority);
+
+  for(const task of pending) {
+    if(!idle.length) break;
+    // Nearest idle AGV
+    let best=null, bestDist=Infinity;
+    for(const a of idle) {
+      const d = Math.abs(a.x-task.pickup.x)+Math.abs(a.y-task.pickup.y);
+      if(d<bestDist){bestDist=d;best=a;}
+    }
+    if(!best) continue;
+
+    const path = smoothPath(astar(best.x,best.y,task.pickup.x,task.pickup.y,best.id));
+    if(!path){
+      addLog(`${task.id} 无路径，稍后重试`, 'warn');
+      continue;
+    }
+
+    task.assignedTo = best.id;
+    best.task   = task;
+    best.state  = 'MOVING';
+    best.path   = path;
+    best.pathIdx= 0;
+    reservePath(path, best.id);
+    idle.splice(idle.indexOf(best),1);
+    addLog(`${best.id} ← ${task.id} [${task.pickup.x},${task.pickup.y}]→[${task.dropoff.x},${task.dropoff.y}]`, 'info');
+  }
+}
+
+function moveAGVs() {
+  for(const agv of agvs) {
+    if(agv.state==='MOVING'||agv.state==='DELIVERING') stepAGV(agv);
+    else if(agv.state==='LOADING'||agv.state==='UNLOADING') handleIO(agv);
+    if(agv.state==='MOVING'||agv.state==='DELIVERING') agv.battery = Math.max(0, agv.battery-0.4);
+    else agv.battery = Math.max(0, agv.battery-0.05);
+  }
+}
+
+function stepAGV(agv) {
+  if(agv.pathIdx+1 >= agv.path.length) { onArrive(agv); return; }
+  const next = agv.path[agv.pathIdx+1];
+  const occ  = getOccupant(next.x, next.y);
+
+  if(occ && occ!==agv.id) {
+    agv.blockedTicks++;
+    agv.state = 'BLOCKED';
+    conflicts++;
+    return;
+  }
+
+  // Move
+  agv.prevX = agv.x; agv.prevY = agv.y;
+  const oldKey = agv.y*COLS+agv.x;
+  if(reserved[oldKey]===agv.id) delete reserved[oldKey];
+
+  agv.x = next.x; agv.y = next.y;
+  agv.pathIdx++;
+  agv.totalDist++;
+  agv.blockedTicks = 0;
+  agv.moveProgress = 0;
+  if(agv.state==='BLOCKED') agv.state = agv.task?.assignedTo ? 'MOVING' : 'IDLE';
+  else if(agv.state!=='DELIVERING') agv.state='MOVING';
+}
+
+function onArrive(agv) {
+  if(agv.state==='MOVING'||agv.state==='BLOCKED') {
+    agv.state='LOADING';
+    agv.blockedTicks=0;
+    addLog(`${agv.id} 到达取货点，装货中`, 'warn');
+  } else if(agv.state==='DELIVERING') {
+    agv.state='UNLOADING';
+    agv.blockedTicks=0;
+    addLog(`${agv.id} 到达卸货点，卸货中`, 'warn');
+  }
+}
+
+function handleIO(agv) {
+  if(agv.state==='LOADING') {
+    const task = agv.task;
+    if(!task) { agv.state='IDLE'; return; }
+    agv.state='DELIVERING';
+    const path = smoothPath(astar(agv.x,agv.y,task.dropoff.x,task.dropoff.y,agv.id));
+    if(path){
+      releaseAGV(agv.id);
+      agv.path=path; agv.pathIdx=0;
+      reservePath(path, agv.id);
+    } else {
+      // Replan later
+      agv.state='IDLE';
+      replans++;
+    }
+  } else if(agv.state==='UNLOADING') {
+    agv.tasksDone++;
+    addLog(`${agv.id} 完成 ${agv.task.id} ✓`, 'good');
+    tasks = tasks.filter(t=>t.id!==agv.task.id);
+    releaseAGV(agv.id);
+    agv.task=null; agv.path=[]; agv.pathIdx=0; agv.state='IDLE';
+  }
+}
+
+function checkDeadlocks() {
+  for(const agv of agvs) {
+    if(agv.blockedTicks >= DEADLOCK_TICKS) {
+      addLog(`⚠ ${agv.id} 死锁检测 → 强制重规划`, 'alert');
+      releaseAGV(agv.id);
+      agv.blockedTicks=0;
+      replans++;
+      const goal = agv.state==='DELIVERING'&&agv.task ? agv.task.dropoff
+                 : agv.task ? agv.task.pickup : null;
+      if(!goal){agv.state='IDLE';continue;}
+      const path=smoothPath(astar(agv.x,agv.y,goal.x,goal.y,agv.id));
+      if(path){
+        agv.path=path; agv.pathIdx=0;
+        reservePath(path, agv.id);
+        agv.state = agv.task?.state==='DELIVERING' ? 'DELIVERING':'MOVING';
+      } else { agv.state='IDLE'; }
+    }
+  }
+}
+
+function handleCharging() {
+  for(const agv of agvs) {
+    if(agv.state==='CHARGING') {
+      agv.battery=Math.min(100, agv.battery+5);
+      if(agv.battery>=95) {agv.state='IDLE'; addLog(`${agv.id} 充电完成`, 'good');}
+    } else if(agv.state==='IDLE'&&agv.battery<LOW_BATTERY) {
+      const chargers=getChargers();
+      let nearest=chargers[0], nd=Infinity;
+      for(const c of chargers){
+        const d=Math.abs(c[0]-agv.x)+Math.abs(c[1]-agv.y);
+        if(d<nd){nd=d;nearest=c;}
+      }
+      if(agv.x===nearest[0]&&agv.y===nearest[1]){
+        agv.state='CHARGING';
+        addLog(`${agv.id} 开始充电`, 'info');
+      } else {
+        const path=smoothPath(astar(agv.x,agv.y,nearest[0],nearest[1],agv.id));
+        if(path){ agv.path=path; agv.pathIdx=0; agv.state='MOVING'; }
+      }
+    }
+  }
+}
+
+// ──────────────────────── Rendering ──────────────────────────────────────────
+
+function resizeCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  const W = wrap.clientWidth, H = wrap.clientHeight - 60;
+  cellSize = Math.floor(Math.min(W/COLS, H/ROWS));
+  canvas.width  = cellSize*COLS;
+  canvas.height = cellSize*ROWS;
+  offsetX = Math.floor((wrap.clientWidth  - canvas.width ) / 2);
+  offsetY = Math.floor((wrap.clientHeight - canvas.height) / 2 - 30);
+  canvas.style.transform = `translate(${offsetX-wrap.clientWidth/2+canvas.width/2}px, ${offsetY-wrap.clientHeight/2+canvas.height/2}px)`;
+}
+
+// Interpolation frame
+let lastFrameTime = 0;
+function renderFrame(timestamp) {
+  const dt = Math.min((timestamp-lastFrameTime)/1000, 0.1);
+  lastFrameTime = timestamp;
+
+  // Advance move interpolation
+  for(const agv of agvs) {
+    agv.moveProgress = Math.min(1, agv.moveProgress + dt*(speed*4));
+    agv.drawX = agv.prevX + (agv.x-agv.prevX)*agv.moveProgress;
+    agv.drawY = agv.prevY + (agv.y-agv.prevY)*agv.moveProgress;
+  }
+
+  drawScene();
+  requestAnimationFrame(renderFrame);
+}
+
+function drawScene() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Background grid
+  ctx.fillStyle = '#020b12';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(14,34,51,0.6)';
+  ctx.lineWidth = 0.5;
+  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*cellSize,0);ctx.lineTo(x*cellSize,canvas.height);ctx.stroke();}
+  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*cellSize);ctx.lineTo(canvas.width,y*cellSize);ctx.stroke();}
+
+  // Tiles
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) {
+    const t=map[y][x];
+    if(t===TILE.EMPTY) continue;
+    const px=x*cellSize, py=y*cellSize, cs=cellSize;
+    if(t===TILE.OBSTACLE) {
+      ctx.fillStyle='#0d1e2b';
+      ctx.fillRect(px+1,py+1,cs-2,cs-2);
+      // Hatch
+      ctx.strokeStyle='rgba(14,34,51,0.8)';
+      ctx.lineWidth=0.5;
+      for(let i=0;i<cs;i+=5){
+        ctx.beginPath();ctx.moveTo(px+i,py);ctx.lineTo(px,py+i);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(px+cs,py+i);ctx.lineTo(px+i,py+cs);ctx.stroke();
+      }
+    } else if(t===TILE.CHARGER) {
+      ctx.fillStyle='rgba(57,255,20,0.06)';
+      ctx.fillRect(px+1,py+1,cs-2,cs-2);
+      ctx.strokeStyle='rgba(57,255,20,0.4)';
+      ctx.lineWidth=1;
+      ctx.strokeRect(px+2,py+2,cs-4,cs-4);
+      ctx.fillStyle='rgba(57,255,20,0.8)';
+      ctx.font=`bold ${Math.floor(cs*0.55)}px monospace`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('⚡',px+cs/2,py+cs/2);
+    } else if(t===TILE.PICKUP) {
+      ctx.fillStyle='rgba(0,212,255,0.06)';
+      ctx.fillRect(px+1,py+1,cs-2,cs-2);
+      drawDiamond(px+cs/2,py+cs/2,cs*0.3,'rgba(0,212,255,0.7)');
+    } else if(t===TILE.DROPOFF) {
+      ctx.fillStyle='rgba(245,166,35,0.06)';
+      ctx.fillRect(px+1,py+1,cs-2,cs-2);
+      drawDiamond(px+cs/2,py+cs/2,cs*0.3,'rgba(245,166,35,0.7)');
+    }
+  }
+
+  // Draw paths of moving AGVs (selected first)
+  const toDrawPaths = selectedAGV
+    ? agvs.filter(a=>a.id===selectedAGV)
+    : agvs.filter(a=>a.state!=='IDLE'&&a.state!=='CHARGING');
+
+  for(const agv of toDrawPaths) {
+    if(!agv.path||agv.pathIdx>=agv.path.length) continue;
+    ctx.beginPath();
+    ctx.strokeStyle = agv.color+'55';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,3]);
+    const start=agv.path[agv.pathIdx];
+    ctx.moveTo((start.x+.5)*cellSize,(start.y+.5)*cellSize);
+    for(let i=agv.pathIdx+1;i<agv.path.length;i++) {
+      ctx.lineTo((agv.path[i].x+.5)*cellSize,(agv.path[i].y+.5)*cellSize);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw AGVs
+  for(const agv of agvs) drawAGV(agv);
+
+  // Labels for key zones
+  ctx.font=`${Math.floor(cellSize*0.38)}px 'Share Tech Mono'`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const [x,y] of getPickups()){
+    ctx.fillStyle='rgba(0,212,255,0.5)';
+    ctx.fillText('P',(x+.5)*cellSize,(y+.5)*cellSize);
+  }
+  for(const [x,y] of getDropoffs()){
+    ctx.fillStyle='rgba(245,166,35,0.5)';
+    ctx.fillText('D',(x+.5)*cellSize,(y+.5)*cellSize);
+  }
+}
+
+function drawAGV(agv) {
+  const px=(agv.drawX+.5)*cellSize;
+  const py=(agv.drawY+.5)*cellSize;
+  const r=Math.floor(cellSize*0.38);
+
+  // Glow
+  const glowColors = {
+    IDLE:'rgba(57,255,20,', MOVING:'rgba(0,212,255,',
+    DELIVERING:'rgba(155,89,255,', LOADING:'rgba(245,166,35,',
+    UNLOADING:'rgba(245,166,35,', CHARGING:'rgba(57,255,20,',
+    BLOCKED:'rgba(255,58,58,',
+  };
+  const gc=glowColors[agv.state]||'rgba(200,200,200,';
+  if(agv.id===selectedAGV) {
+    ctx.shadowBlur=14; ctx.shadowColor=agv.color;
+  } else {
+    ctx.shadowBlur=6; ctx.shadowColor=gc+'0.6)';
+  }
+
+  // Body
+  ctx.fillStyle = agv.color;
+  ctx.beginPath();
+  ctx.roundRect(px-r,py-r,r*2,r*2,2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+
+  // State indicator ring
+  ctx.strokeStyle = gc+'0.9)';
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(px-r-1.5,py-r-1.5,r*2+3,r*2+3);
+
+  // AGV number
+  ctx.fillStyle='#020b12';
+  ctx.font=`bold ${Math.floor(r*0.95)}px 'Share Tech Mono'`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(agv.id.replace('AGV-',''),px,py);
+
+  // Battery micro bar (top of AGV)
+  const bw=r*2, bh=2;
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(px-r,py-r-4,bw,bh);
+  const bc = agv.battery>50?'#39ff14':agv.battery>20?'#f5a623':'#ff3a3a';
+  ctx.fillStyle=bc;
+  ctx.fillRect(px-r,py-r-4,bw*(agv.battery/100),bh);
+}
+
+function drawDiamond(cx,cy,r,color) {
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.moveTo(cx,cy-r); ctx.lineTo(cx+r,cy);
+  ctx.lineTo(cx,cy+r); ctx.lineTo(cx-r,cy);
+  ctx.closePath(); ctx.fill();
+}
+
+// ──────────────────────── UI Updates ─────────────────────────────────────────
+
+function updateUI() {
+  const completed = NUM_AGVS*50 - tasks.length; // rough
+  const tasksDone = agvs.reduce((s,a)=>s+a.tasksDone,0);
+  const active    = agvs.filter(a=>a.state!=='IDLE'&&a.state!=='CHARGING').length;
+  const avgBat    = agvs.reduce((s,a)=>s+a.battery,0)/agvs.length;
+  const util      = (active/agvs.length)*100;
+
+  document.getElementById('h-tasks').textContent    = tasksDone;
+  document.getElementById('h-active').textContent   = active;
+  document.getElementById('h-conflicts').textContent= conflicts;
+  document.getElementById('h-efficiency').textContent =
+    tasksDone>5 ? Math.min(99,Math.round(100-conflicts/tasksDone*10))+'%' : '—';
+
+  document.getElementById('m-completed').textContent = tasksDone;
+  document.getElementById('m-pending').textContent   = tasks.filter(t=>!t.assignedTo).length;
+  document.getElementById('m-conflicts').textContent = conflicts;
+  document.getElementById('m-replans').textContent   = replans;
+  document.getElementById('m-tick').textContent      = tick;
+
+  const batBar=document.getElementById('bat-bar');
+  batBar.style.width = avgBat+'%';
+  batBar.style.background = avgBat>50?'var(--green)':avgBat>20?'var(--amber)':'var(--red)';
+  document.getElementById('util-bar').style.width = util+'%';
+
+  updateAGVList();
+  updateClock();
+
+  // Periodically add more tasks
+  if(tasks.filter(t=>!t.assignedTo).length<5 && tick%20===0) {
+    for(let i=0;i<5;i++) tasks.push(makeTask(Math.random()<.2?2:1));
+    addLog('系统生成新任务批次', 'info');
+  }
+}
+
+function updateAGVList() {
+  const list = document.getElementById('agv-list');
+  list.innerHTML = '';
+  for(const agv of agvs) {
+    const div=document.createElement('div');
+    div.className='agv-item'+(agv.id===selectedAGV?' selected':'');
+    div.onclick=()=>{ selectedAGV=agv.id===selectedAGV?null:agv.id; };
+    const bc=agv.battery>50?'var(--green)':agv.battery>20?'var(--amber)':'var(--red)';
+    div.innerHTML=`
+      <div class="agv-header">
+        <span class="agv-id" style="color:${agv.color}">${agv.id}</span>
+        <span class="agv-state-badge state-${agv.state}">${stateLabel(agv.state)}</span>
+      </div>
+      <div class="battery-bar"><div class="battery-fill" style="width:${agv.battery}%;background:${bc}"></div></div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:3px">
+        ${agv.battery.toFixed(0)}% · 完成:${agv.tasksDone} · 位置:[${agv.x},${agv.y}]
+      </div>
+    `;
+    list.appendChild(div);
+  }
+}
+
+function stateLabel(s) {
+  return {IDLE:'待机',MOVING:'取货',DELIVERING:'送货',
+          LOADING:'装货',UNLOADING:'卸货',CHARGING:'充电',BLOCKED:'阻塞'}[s]||s;
+}
+
+function addLog(msg, type='') {
+  logEntries.unshift({msg, type, tick});
+  if(logEntries.length>80) logEntries.pop();
+  const log = document.getElementById('event-log');
+  log.innerHTML = logEntries.slice(0,40).map(e=>
+    `<div class="log-entry ${e.type}"><span style="color:var(--dim)">[${e.tick}]</span> ${e.msg}</div>`
+  ).join('');
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toTimeString().slice(0,8);
+}
+
+// ──────────────────────── Init & Controls ────────────────────────────────────
+
+function init() {
+  map=[]; agvs=[]; tasks=[]; taskCounter=0;
+  tick=0; conflicts=0; replans=0; speed=1;
+  Object.keys(reserved).forEach(k=>delete reserved[k]);
+  logEntries=[];
+
+  buildMap();
+
+  const chargers=getChargers();
+  for(let i=0;i<NUM_AGVS;i++) {
+    const c=chargers[i%chargers.length];
+    agvs.push(makeAGV(`AGV-${String(i+1).padStart(2,'0')}`,c[0],c[1],i));
+  }
+
+  for(let i=0;i<NUM_AGVS*2;i++) tasks.push(makeTask(Math.random()<.2?2:1));
+
+  addLog('系统初始化完成 · '+NUM_AGVS+' 台 AGV 就绪', 'good');
+  addLog('任务队列已加载 · '+tasks.length+' 个任务', 'info');
+
+  document.getElementById('speed-display').textContent='1×';
+  document.getElementById('btn-play').textContent='▶ 运行';
+  running=false;
+}
+
+function startStop() {
+  running=!running;
+  document.getElementById('btn-play').textContent = running ? '⏸ 暂停' : '▶ 运行';
+  if(running) {
+    clearInterval(intervalId);
+    intervalId = setInterval(()=>{
+      const steps=Math.max(1,Math.round(speed));
+      for(let i=0;i<steps;i++) dispatcherTick();
+    }, 200);
+  } else {
+    clearInterval(intervalId);
+  }
+}
+
+// ──────────────────────── Event Listeners ────────────────────────────────────
+
+document.getElementById('btn-play').onclick  = startStop;
+document.getElementById('btn-reset').onclick = ()=>{ clearInterval(intervalId); init(); };
+document.getElementById('btn-add-task').onclick = ()=>{
+  const n=Math.floor(Math.random()*3)+3;
+  for(let i=0;i<n;i++) tasks.push(makeTask(2));
+  addLog(`紧急! 新增 ${n} 个优先任务`, 'alert');
+};
+document.getElementById('btn-slower').onclick = ()=>{
+  speed=Math.max(.5,speed/2);
+  document.getElementById('speed-display').textContent=
+    speed<1?`${speed}×`:`${speed}×`;
+  if(running){clearInterval(intervalId);startStop();startStop();}
+};
+document.getElementById('btn-faster').onclick = ()=>{
+  speed=Math.min(8,speed*2);
+  document.getElementById('speed-display').textContent=`${speed}×`;
+  if(running){clearInterval(intervalId);startStop();startStop();}
+};
+
+window.addEventListener('resize',()=>{resizeCanvas();});
+
+// ──────────────────────── Boot ────────────────────────────────────────────────
+
+resizeCanvas();
+init();
+requestAnimationFrame(renderFrame);
+
+// Auto-start after brief delay
+setTimeout(startStop, 800);
+</script>
+</body>
+</html>
